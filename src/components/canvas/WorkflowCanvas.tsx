@@ -5,6 +5,7 @@ import "@xyflow/react/dist/style.css";
 import { useCallback } from "react";
 
 import { useCanvasStore } from "@/store/useCanvasStore";
+import { useToastStore } from "@/store/useToastStore";
 
 import { EDGE_TYPES, NODE_TYPES } from "./canvas.constants";
 import { wouldCreateCycle } from "./canvas.utils";
@@ -21,7 +22,11 @@ export function WorkflowCanvas() {
       const { nodes: currentNodes, edges: currentEdges } = useCanvasStore.getState();
 
       if (wouldCreateCycle(currentNodes, currentEdges, connection)) {
-        console.warn("Rejected connection: would create a cycle in the workflow graph.");
+        useToastStore.getState().show({
+          variant: "warning",
+          title: "Connection rejected",
+          description: "This edge would create a cycle in the workflow.",
+        });
         return;
       }
 

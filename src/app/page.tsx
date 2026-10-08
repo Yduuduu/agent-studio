@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 
 import { WorkflowCanvas } from "@/components/canvas/WorkflowCanvas";
+import { Toaster } from "@/components/ui/toast/Toaster";
 import { useCanvasStore, type WorkflowNode } from "@/store/useCanvasStore";
 
 const SEED_NODES: WorkflowNode[] = [
@@ -48,6 +49,7 @@ export default function Home() {
       <main className="flex-1">
         <WorkflowCanvas />
       </main>
+      <Toaster />
     </div>
   );
 }

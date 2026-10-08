@@ -28,6 +28,10 @@ interface CanvasState {
   setEdges: (edges: Edge[]) => void;
 }
 
+// Node positions captured on the first frame of a drag gesture, so the
+// history entry committed on drag stop undoes back to the pre-drag layout.
+let dragOrigin: WorkflowNode[] | null = null;
+
 export const useCanvasStore = create<CanvasState>((set, get) => ({
   nodes: [],
   edges: [],
@@ -39,14 +43,19 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
 
     // Only commit history once a drag gesture settles, or on removal —
     // recording every intermediate drag frame would flood the stack.
+    const dragging = changes.some((change) => change.type === "position" && change.dragging);
     const dragSettled = changes.some(
       (change) => change.type === "position" && change.dragging === false,
     );
     const removed = changes.filter((change) => change.type === "remove");
 
+    if (dragging && !dragOrigin) dragOrigin = before;
+
     if (dragSettled) {
+      const origin = dragOrigin ?? before;
+      dragOrigin = null;
       useUndoRedoStore.getState().push({
-        undo: () => set({ nodes: before }),
+        undo: () => set({ nodes: origin }),
         redo: () => set({ nodes: after }),
       });
     } else if (removed.length > 0) {

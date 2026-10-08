@@ -8,6 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "format": "prettier --write .",
+    "test": "vitest run --project unit",
+    "test:watch": "vitest --project unit",
+    "check-stories": "node --disable-warning=ExperimentalWarning scripts/check-stories.mts",
     "prepare": "husky",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
