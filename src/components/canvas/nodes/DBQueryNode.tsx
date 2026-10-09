@@ -8,7 +8,7 @@ import { BaseNode } from "./BaseNode";
 function DBQueryNodeComponent({ data, selected }: NodeProps<WorkflowNode>) {
   return (
     <BaseNode data={data} selected={selected} icon={<span aria-hidden="true">🗄️</span>}>
-      Database query step
+      {(data.config?.connectionId as string | undefined) || "Database query step"}
     </BaseNode>
   );
 }
@@ -19,5 +19,6 @@ export const DBQueryNode = memo(
     prev.selected === next.selected &&
     prev.data.label === next.data.label &&
     prev.data.status === next.data.status &&
-    prev.data.progress === next.data.progress,
+    prev.data.progress === next.data.progress &&
+    prev.data.config === next.data.config,
 );

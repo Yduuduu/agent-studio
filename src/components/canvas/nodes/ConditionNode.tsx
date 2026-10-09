@@ -7,6 +7,9 @@ import { cn } from "@/utils/cn";
 import type { WorkflowNode } from "@/store/useCanvasStore";
 
 function ConditionNodeComponent({ data, selected }: NodeProps<WorkflowNode>) {
+  const rules = data.config?.rules;
+  const ruleCount = Array.isArray(rules) ? rules.length : 0;
+
   return (
     <div
       className={cn(
@@ -24,7 +27,9 @@ function ConditionNodeComponent({ data, selected }: NodeProps<WorkflowNode>) {
         <Badge status={data.status} />
       </div>
 
-      <div className="px-3 py-2 text-xs text-gray-600">Conditional branch</div>
+      <div className="px-3 py-2 text-xs text-gray-600">
+        {ruleCount ? `${ruleCount} rule${ruleCount > 1 ? "s" : ""}` : "Conditional branch"}
+      </div>
 
       <Handle
         type="source"
@@ -47,5 +52,6 @@ export const ConditionNode = memo(
   (prev, next) =>
     prev.selected === next.selected &&
     prev.data.label === next.data.label &&
-    prev.data.status === next.data.status,
+    prev.data.status === next.data.status &&
+    prev.data.config === next.data.config,
 );

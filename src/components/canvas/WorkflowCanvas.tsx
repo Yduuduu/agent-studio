@@ -1,12 +1,21 @@
 "use client";
 
-import { Background, Controls, MiniMap, ReactFlow, type Connection } from "@xyflow/react";
+import {
+  Background,
+  Controls,
+  MiniMap,
+  ReactFlow,
+  type Connection,
+  type NodeMouseHandler,
+} from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useCallback } from "react";
 
-import { useCanvasStore } from "@/store/useCanvasStore";
+import { useNodeSelectionStore } from "@/hooks/useNodeSelection";
+import { useCanvasStore, type WorkflowNode } from "@/store/useCanvasStore";
+import { useToastStore } from "@/store/useToastStore";
 
-import { EDGE_TYPES, NODE_TYPES } from "./canvas.constants";
+import { DEFAULT_EDGE_OPTIONS, EDGE_TYPES, NODE_TYPES } from "./canvas.constants";
 import { wouldCreateCycle } from "./canvas.utils";
 
 export function WorkflowCanvas() {
@@ -15,13 +24,23 @@ export function WorkflowCanvas() {
   const onNodesChange = useCanvasStore((state) => state.onNodesChange);
   const onEdgesChange = useCanvasStore((state) => state.onEdgesChange);
   const onConnect = useCanvasStore((state) => state.onConnect);
+  const openNode = useNodeSelectionStore((state) => state.openNode);
+
+  const handleNodeClick = useCallback<NodeMouseHandler<WorkflowNode>>(
+    (_event, node) => openNode(node.id),
+    [openNode],
+  );
 
   const handleConnect = useCallback(
     (connection: Connection) => {
       const { nodes: currentNodes, edges: currentEdges } = useCanvasStore.getState();
 
       if (wouldCreateCycle(currentNodes, currentEdges, connection)) {
-        console.warn("Rejected connection: would create a cycle in the workflow graph.");
+        useToastStore.getState().show({
+          variant: "warning",
+          title: "Connection rejected",
+          description: "This edge would create a cycle in the workflow.",
+        });
         return;
       }
 
@@ -37,9 +56,11 @@ export function WorkflowCanvas() {
         edges={edges}
         nodeTypes={NODE_TYPES}
         edgeTypes={EDGE_TYPES}
+        defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={handleConnect}
+        onNodeClick={handleNodeClick}
         fitView
       >
         <Background />

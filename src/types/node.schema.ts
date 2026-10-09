@@ -11,36 +11,7 @@ export const baseNodeDataSchema = z.object({
   kind: workflowNodeKindSchema,
   status: nodeStatusSchema.default("idle"),
   progress: z.number().min(0).max(100).optional(),
+  // Validated per kind by NODE_CONFIG_FORMS (types/form.schema.ts) on save.
+  config: z.record(z.string(), z.unknown()).optional(),
 });
 export type BaseNodeData = z.infer<typeof baseNodeDataSchema>;
-
-export const llmNodeConfigSchema = z.object({
-  provider: z.enum(["anthropic", "openai"]),
-  model: z.string().min(1),
-  systemPrompt: z.string().optional(),
-  extendedThinking: z.boolean().optional(),
-  temperature: z.number().min(0).max(2).default(1),
-});
-export type LLMNodeConfig = z.infer<typeof llmNodeConfigSchema>;
-
-export const dbQueryNodeConfigSchema = z.object({
-  connectionId: z.string().min(1),
-  query: z.string().min(1),
-  timeoutMs: z.number().int().positive().default(5000),
-});
-export type DBQueryNodeConfig = z.infer<typeof dbQueryNodeConfigSchema>;
-
-export const conditionOperatorSchema = z.enum(["equals", "contains", "greaterThan", "lessThan"]);
-
-export const conditionNodeConfigSchema = z.object({
-  rules: z
-    .array(
-      z.object({
-        field: z.string().min(1),
-        operator: conditionOperatorSchema,
-        value: z.string().min(1),
-      }),
-    )
-    .min(1),
-});
-export type ConditionNodeConfig = z.infer<typeof conditionNodeConfigSchema>;
