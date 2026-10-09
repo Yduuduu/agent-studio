@@ -20,15 +20,15 @@ AI 에이전트 파이프라인을 시각적으로 설계·검증·모니터링�
 
 | 영역            | 선택                                          | 비고                            |
 | --------------- | --------------------------------------------- | ------------------------------- |
-| 프레임워크      | Next.js 14 (App Router)                       | `src/app` 구조                  |
+| 프레임워크      | Next.js 16 (App Router) + React 19            | `src/app` 구조                  |
 | 언어            | TypeScript (strict)                           | `noUncheckedIndexedAccess` 포함 |
-| 캔버스          | `reactflow` (`@xyflow/react`)                 | 커스텀 노드/엣지                |
-| 전역 상태       | `zustand` (+ `zundo` 또는 자체 미들웨어)      | 캔버스/로그 스토어 분리         |
+| 캔버스          | React Flow v12 (`@xyflow/react`)              | 커스텀 노드/엣지                |
+| 전역 상태       | `zustand` (+ 자체 커맨드 히스토리 스토어)     | 캔버스/로그 스토어 분리         |
 | 폼              | `react-hook-form` + `@hookform/resolvers/zod` | `useFieldArray`, `Controller`   |
 | 스키마 검증     | `zod`                                         | 폼/노드 데이터 공용 스키마      |
 | 가상화          | `@tanstack/react-virtual`                     | 로그 뷰어                       |
 | 스타일          | TailwindCSS + `clsx` + `tailwind-merge`       | 인라인 스타일 금지              |
-| 컴포넌트 문서화 | Storybook 8                                   | `ui/` 컴포넌트 필수             |
+| 컴포넌트 문서화 | Storybook 10                                  | `ui/` 컴포넌트 필수             |
 | 품질 게이트     | ESLint, Prettier, Husky, lint-staged          | pre-commit 강제                 |
 | 테스트          | Vitest + Testing Library                      | 유닛/훅 테스트                  |
 
@@ -300,10 +300,10 @@ export interface ButtonProps extends Omit<React.ComponentPropsWithoutRef<"button
 
 > `Task N`으로 지시 시 아래 항목을 순서대로 수행한다. 각 태스크는 이전 태스크의 결과물에 의존한다.
 
-1. Next.js(App Router, TS strict) 프로젝트 생성 및 기본 의존성 설치 (`reactflow`, `zustand`, `react-hook-form`, `@hookform/resolvers`, `zod`, `@tanstack/react-virtual`, `clsx`, `tailwind-merge`, TailwindCSS)
+1. Next.js(App Router, TS strict) 프로젝트 생성 및 기본 의존성 설치 (`@xyflow/react`, `zustand`, `react-hook-form`, `@hookform/resolvers`, `zod`, `@tanstack/react-virtual`, `clsx`, `tailwind-merge`, TailwindCSS)
 2. ESLint(strict + `eslint-plugin-react-hooks`) / Prettier 설정 파일 작성
 3. Husky 초기화 + `lint-staged` 설정 + `.husky/pre-commit` 훅 연결 및 동작 검증
-4. Storybook 8 설치 및 Next.js/Tailwind 연동 설정
+4. Storybook 10 설치 및 Next.js/Tailwind 연동 설정
 5. `utils/cn.ts` 작성 및 단위 테스트 작성
 6. 디자인 시스템 기초 컴포넌트(`Button`, `Input`) 구현 + 각각 `.stories.tsx` 작성
 7. `Badge`, `ProgressBar` 컴포넌트 구현 (노드 상태 표시용) + Storybook 작성
