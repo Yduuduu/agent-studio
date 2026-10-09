@@ -38,7 +38,8 @@ export function useWorkflowRun(workflowId: string) {
       useLogStore.getState().clear();
       for (const node of nodes) updateNodeData(node.id, { status: "pending", progress: undefined });
 
-      const hilNode = nodes.find((node) => node.data.kind === "condition");
+      // Gate on the last condition node so a run exercises most of the graph first.
+      const hilNode = nodes.findLast((node) => node.data.kind === "condition");
       const runId = Date.now().toString(36);
       setUrl(
         buildRunUrl(
