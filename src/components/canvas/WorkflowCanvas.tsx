@@ -15,7 +15,7 @@ import { useNodeSelectionStore } from "@/hooks/useNodeSelection";
 import { useCanvasStore, type WorkflowNode } from "@/store/useCanvasStore";
 import { useToastStore } from "@/store/useToastStore";
 
-import { EDGE_TYPES, NODE_TYPES } from "./canvas.constants";
+import { DEFAULT_EDGE_OPTIONS, EDGE_TYPES, NODE_TYPES } from "./canvas.constants";
 import { wouldCreateCycle } from "./canvas.utils";
 
 export function WorkflowCanvas() {
@@ -56,6 +56,7 @@ export function WorkflowCanvas() {
         edges={edges}
         nodeTypes={NODE_TYPES}
         edgeTypes={EDGE_TYPES}
+        defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={handleConnect}
