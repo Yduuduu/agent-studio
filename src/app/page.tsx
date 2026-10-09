@@ -3,7 +3,9 @@
 import { useEffect } from "react";
 
 import { WorkflowCanvas } from "@/components/canvas/WorkflowCanvas";
+import { LogViewer } from "@/components/log-viewer/LogViewer";
 import { NodeSettingsDrawer } from "@/components/node-settings/NodeSettingsDrawer";
+import { RunControls } from "@/components/run/RunControls";
 import { Toaster } from "@/components/ui/toast/Toaster";
 import { useCanvasStore, type WorkflowNode } from "@/store/useCanvasStore";
 
@@ -46,9 +48,13 @@ export default function Home() {
     <div className="flex h-screen w-screen flex-col">
       <header className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
         <h1 className="text-sm font-semibold text-gray-900">Visual Workflow Builder</h1>
+        <RunControls workflowId="demo" />
       </header>
-      <main className="flex-1">
-        <WorkflowCanvas />
+      <main className="flex min-h-0 flex-1 flex-col">
+        <div className="min-h-0 flex-1">
+          <WorkflowCanvas />
+        </div>
+        <LogViewer className="h-72 shrink-0 border-t border-gray-200" />
       </main>
       <NodeSettingsDrawer />
       <Toaster />
