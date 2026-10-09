@@ -55,6 +55,7 @@ describe("useLogStore", () => {
       type: "hil_request",
       id: "h1",
       timestamp: 1,
+      workflowId: "wf",
       requestId: "req-1",
       message: "Approve?",
       resolution: "pending",
@@ -72,5 +73,54 @@ describe("useLogStore", () => {
     store().clear();
     vi.advanceTimersToNextFrame();
     expect(store().logs).toEqual([]);
+  });
+});
+
+describe("useLogStore.decideHIL", () => {
+  function seedHIL() {
+    store().enqueue({
+      type: "hil_request",
+      id: "h1",
+      timestamp: 1,
+      workflowId: "wf",
+      requestId: "req-1",
+      message: "Approve?",
+      resolution: "pending",
+    });
+    store().flush();
+  }
+  const resolution = () => (store().logs[0] as { resolution: string }).resolution;
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("applies the decision before the server responds", async () => {
+    seedHIL();
+    let respond!: (response: Response) => void;
+    const fetchMock = vi.fn(() => new Promise<Response>((resolve) => (respond = resolve)));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const pending = store().decideHIL("wf", "req-1", "approved");
+    expect(resolution()).toBe("approved");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/workflows/wf/hil/req-1",
+      expect.objectContaining({ method: "POST", body: JSON.stringify({ decision: "approved" }) }),
+    );
+
+    respond(Response.json({ ok: true }));
+    await pending;
+    expect(resolution()).toBe("approved");
+  });
+
+  it("rolls back to pending and rethrows when the server rejects", async () => {
+    seedHIL();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => Response.json({ error: "No pending HIL request" }, { status: 404 })),
+    );
+
+    await expect(store().decideHIL("wf", "req-1", "rejected")).rejects.toThrow(
+      "No pending HIL request",
+    );
+    expect(resolution()).toBe("pending");
   });
 });

@@ -1,16 +1,19 @@
 import type { StreamEvent } from "@/types/log.types";
 
+import { waitForDecision } from "./hilRegistry";
+
 // Stand-in for a real workflow executor: walks the given nodes in order and
 // emits the same event stream a backend would. Used by the mock SSE route.
 
 export interface MockRunOptions {
+  workflowId: string;
   runId: string;
   nodeIds: string[];
   /** Log lines per node. */
   linesPerNode?: number;
   /** Approximate log lines per second (DoD stress target: 200+). */
   linesPerSecond?: number;
-  /** Emit a HIL request after this node finishes. */
+  /** After this node finishes, emit a HIL request and pause until it is decided. */
   hilAfterNodeId?: string;
   signal?: AbortSignal;
 }
@@ -36,6 +39,7 @@ const sleep = (ms: number, signal?: AbortSignal) =>
   });
 
 export async function* mockWorkflowRun({
+  workflowId,
   runId,
   nodeIds,
   linesPerNode = 40,
@@ -68,17 +72,36 @@ export async function* mockWorkflowRun({
       await sleep(interval, signal);
     }
 
-    yield { type: "node_status", nodeId, status: "success", progress: 100 };
-
-    if (nodeId === hilAfterNodeId) {
-      yield {
-        type: "hil_request",
-        id: nextId(),
-        timestamp: Date.now(),
-        requestId: `${runId}-hil-${nodeId}`,
-        nodeId,
-        message: "Approve sending the generated response to the customer?",
-      };
+    if (nodeId !== hilAfterNodeId) {
+      yield { type: "node_status", nodeId, status: "success", progress: 100 };
+      continue;
     }
+
+    // Human-in-the-loop gate: the node waits in "pending" until decided.
+    const requestId = `${runId}-hil-${nodeId}`;
+    yield { type: "node_status", nodeId, status: "pending", progress: 100 };
+    yield {
+      type: "hil_request",
+      id: nextId(),
+      timestamp: Date.now(),
+      workflowId,
+      requestId,
+      nodeId,
+      message: "Approve sending the generated response to the customer?",
+    };
+
+    const decision = await waitForDecision(requestId, signal);
+    if (!decision) return;
+    const approved = decision === "approved";
+    yield {
+      type: "log",
+      id: nextId(),
+      timestamp: Date.now(),
+      level: approved ? "info" : "warn",
+      nodeId,
+      message: approved ? "Operator approved; continuing run" : "Operator rejected; halting run",
+    };
+    yield { type: "node_status", nodeId, status: approved ? "success" : "error", progress: 100 };
+    if (!approved) return;
   }
 }

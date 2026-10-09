@@ -90,6 +90,7 @@ describe("LogViewer", () => {
         type: "hil_request",
         id: "h",
         timestamp: 2,
+        workflowId: "wf",
         requestId: "r",
         message: "Approve?",
         resolution: "pending",
@@ -97,7 +98,7 @@ describe("LogViewer", () => {
     ]);
 
     expect(screen.getByText("Needs Approval?")).toBeInTheDocument();
-    expect(screen.getByText("Awaiting approval")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Approve" })).toBeInTheDocument();
   });
 
   it("does not show the jump button while following", () => {

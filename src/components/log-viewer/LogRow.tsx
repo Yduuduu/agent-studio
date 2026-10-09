@@ -4,6 +4,7 @@ import { useCanvasStore } from "@/store/useCanvasStore";
 import type { LogEntry, LogLevel } from "@/types/log.types";
 import { cn } from "@/utils/cn";
 
+import { HILApprovalBar } from "./HILApprovalBar";
 import { formatLogTime } from "./log-viewer.utils";
 
 const LEVEL_CLASSES: Record<LogLevel, string> = {
@@ -45,11 +46,7 @@ function LogRowComponent({ entry }: LogRowProps) {
       ) : null}
       <div className="min-w-0 flex-1">
         <p className="break-words whitespace-pre-wrap text-gray-800">{entry.message}</p>
-        {isHIL ? (
-          <p className="mt-1 text-gray-500">
-            {entry.resolution === "pending" ? "Awaiting approval" : entry.resolution}
-          </p>
-        ) : null}
+        {isHIL ? <HILApprovalBar entry={entry} /> : null}
       </div>
     </div>
   );

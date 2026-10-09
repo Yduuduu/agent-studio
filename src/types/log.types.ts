@@ -22,6 +22,7 @@ export const hilRequestEventSchema = z.object({
   type: z.literal("hil_request"),
   id: z.string(),
   timestamp: z.number(),
+  workflowId: z.string(),
   requestId: z.string(),
   message: z.string(),
   nodeId: z.string().optional(),
@@ -43,8 +44,11 @@ export const streamEventSchema = z.discriminatedUnion("type", [
 ]);
 export type StreamEvent = z.infer<typeof streamEventSchema>;
 
+export const hilDecisionSchema = z.enum(["approved", "rejected"]);
+export type HILDecision = z.infer<typeof hilDecisionSchema>;
+
 /** Client-side lifecycle of a HIL request in the log viewer. */
-export type HILResolution = "pending" | "approved" | "rejected";
+export type HILResolution = "pending" | HILDecision;
 
 export type HILLogEntry = HILRequestEvent & { resolution: HILResolution };
 

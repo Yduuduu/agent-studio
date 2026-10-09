@@ -21,6 +21,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const nodeIds = (query.get("nodes") ?? "").split(",").filter(Boolean);
 
   const run = mockWorkflowRun({
+    workflowId: id,
     runId: `${id}-${Date.now().toString(36)}`,
     nodeIds,
     linesPerSecond: clampInt(query.get("rate"), 40, 1, 1000),

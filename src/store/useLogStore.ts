@@ -1,6 +1,7 @@
 import { create } from "zustand";
 
-import type { HILResolution, LogEntry } from "@/types/log.types";
+import type { HILDecision, HILResolution, LogEntry } from "@/types/log.types";
+import { submitHILDecision } from "@/utils/api";
 
 /** Oldest entries are dropped past this, so a long run cannot grow memory unbounded. */
 export const MAX_LOGS = 10_000;
@@ -12,6 +13,11 @@ interface LogState {
   /** Commits the buffer immediately (also used by tests). */
   flush: () => void;
   setHILResolution: (requestId: string, resolution: HILResolution) => void;
+  /**
+   * Optimistically marks the request decided, then confirms with the server.
+   * On failure the entry rolls back to "pending" and the error is rethrown.
+   */
+  decideHIL: (workflowId: string, requestId: string, decision: HILDecision) => Promise<void>;
   clear: () => void;
 }
 
@@ -60,6 +66,16 @@ export const useLogStore = create<LogState>((set, get) => ({
           : entry,
       ),
     }),
+
+  decideHIL: async (workflowId, requestId, decision) => {
+    get().setHILResolution(requestId, decision);
+    try {
+      await submitHILDecision(workflowId, requestId, decision);
+    } catch (error) {
+      get().setHILResolution(requestId, "pending");
+      throw error;
+    }
+  },
 
   clear: () => {
     cancelScheduledFlush();

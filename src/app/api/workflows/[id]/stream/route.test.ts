@@ -2,43 +2,91 @@
 import { NextRequest } from "next/server";
 import { describe, expect, it } from "vitest";
 
-import { streamEventSchema } from "@/types/log.types";
+import { streamEventSchema, type HILDecision, type StreamEvent } from "@/types/log.types";
 
+import { POST } from "../hil/[requestId]/route";
 import { GET } from "./route";
 
-async function readEvents(response: Response) {
-  const text = await response.text();
-  return text
-    .split("\n\n")
-    .filter(Boolean)
-    .map((chunk) => {
-      const event = /^event: (.+)$/m.exec(chunk)?.[1] ?? "message";
-      const data = JSON.parse(/^data: (.+)$/m.exec(chunk)![1]!) as unknown;
-      return { event, data };
-    });
+function decide(requestId: string, decision: HILDecision) {
+  const request = new NextRequest(`http://localhost/api/workflows/wf/hil/${requestId}`, {
+    method: "POST",
+    body: JSON.stringify({ decision }),
+  });
+  return POST(request, { params: Promise.resolve({ id: "wf", requestId }) });
 }
 
+/** Reads the SSE stream to completion, answering HIL requests as they arrive. */
+async function runToEnd(query: string, decision: HILDecision) {
+  const request = new NextRequest(`http://localhost/api/workflows/wf/stream?${query}`);
+  const response = await GET(request, { params: Promise.resolve({ id: "wf" }) });
+  expect(response.headers.get("content-type")).toBe("text/event-stream");
+
+  const reader = response.body!.pipeThrough(new TextDecoderStream()).getReader();
+  const events: StreamEvent[] = [];
+  let buffer = "";
+  let ended = false;
+
+  while (!ended) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += value;
+    const chunks = buffer.split("\n\n");
+    buffer = chunks.pop() ?? "";
+    for (const chunk of chunks) {
+      if (chunk.startsWith("event: end")) {
+        ended = true;
+        continue;
+      }
+      const event = streamEventSchema.parse(JSON.parse(chunk.replace(/^data: /, "")));
+      events.push(event);
+      if (event.type === "hil_request") {
+        expect((await decide(event.requestId, decision)).status).toBe(200);
+      }
+    }
+  }
+  return { events, ended };
+}
+
+const statusesOf = (events: StreamEvent[]) =>
+  events.flatMap((e) => (e.type === "node_status" ? [`${e.nodeId}:${e.status}`] : []));
+
 describe("GET /api/workflows/:id/stream", () => {
-  it("streams schema-valid events for each node, a HIL request, then end", async () => {
-    const request = new NextRequest(
-      "http://localhost/api/workflows/wf/stream?nodes=a,b&lines=3&rate=1000&hil=a",
-    );
-    const response = await GET(request, { params: Promise.resolve({ id: "wf" }) });
-    expect(response.headers.get("content-type")).toBe("text/event-stream");
+  it("pauses at the HIL gate and continues once approved", async () => {
+    const { events, ended } = await runToEnd("nodes=a,b&lines=3&rate=1000&hil=a", "approved");
 
-    const events = await readEvents(response);
-    expect(events.at(-1)?.event).toBe("end");
-
-    const messages = events.filter((e) => e.event === "message").map((e) => e.data);
-    const parsed = messages.map((data) => streamEventSchema.parse(data));
-
-    expect(parsed.filter((e) => e.type === "log")).toHaveLength(6);
-    expect(parsed.filter((e) => e.type === "hil_request")).toEqual([
-      expect.objectContaining({ nodeId: "a", requestId: expect.stringContaining("hil-a") }),
+    expect(ended).toBe(true);
+    expect(events.filter((e) => e.type === "hil_request")).toEqual([
+      expect.objectContaining({ workflowId: "wf", nodeId: "a" }),
     ]);
-    const statuses = parsed.flatMap((e) =>
-      e.type === "node_status" ? [`${e.nodeId}:${e.status}`] : [],
+    expect(statusesOf(events)).toEqual([
+      "a:running",
+      "a:pending",
+      "a:success",
+      "b:running",
+      "b:success",
+    ]);
+    expect(events).toContainEqual(
+      expect.objectContaining({ message: "Operator approved; continuing run" }),
     );
-    expect(statuses).toEqual(["a:running", "a:success", "b:running", "b:success"]);
+  });
+
+  it("halts the run when rejected", async () => {
+    const { events } = await runToEnd("nodes=a,b&lines=2&rate=1000&hil=a", "rejected");
+    expect(statusesOf(events)).toEqual(["a:running", "a:pending", "a:error"]);
+  });
+});
+
+describe("POST /api/workflows/:id/hil/:requestId", () => {
+  it("rejects an invalid body with 400", async () => {
+    const request = new NextRequest("http://localhost/api/workflows/wf/hil/x", {
+      method: "POST",
+      body: JSON.stringify({ decision: "maybe" }),
+    });
+    const response = await POST(request, { params: Promise.resolve({ id: "wf", requestId: "x" }) });
+    expect(response.status).toBe(400);
+  });
+
+  it("returns 404 for a request nobody is waiting on", async () => {
+    expect((await decide("unknown", "approved")).status).toBe(404);
   });
 });

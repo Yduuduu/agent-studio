@@ -35,6 +35,7 @@ describe("routeStreamEvent", () => {
       type: "hil_request",
       id: "2",
       timestamp: 2,
+      workflowId: "wf",
       requestId: "r",
       message: "ok?",
     });
