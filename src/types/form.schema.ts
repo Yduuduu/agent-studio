@@ -157,7 +157,7 @@ export const conditionNodeUiSchema: UiSchema<ConditionNodeConfigInput> = {
 // Registry — what the node settings Drawer looks up by node kind.
 // ---------------------------------------------------------------------------
 
-interface NodeConfigForm<S extends z.ZodTypeAny> {
+export interface NodeConfigForm<S extends z.ZodTypeAny> {
   schema: S;
   uiSchema: UiSchema<z.input<S>>;
   defaultValues: z.input<S>;

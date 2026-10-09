@@ -24,6 +24,8 @@ interface CanvasState {
   addNode: (node: WorkflowNode) => void;
   removeNode: (nodeId: string) => void;
   updateNodeData: (nodeId: string, data: Partial<BaseNodeData>) => void;
+  /** User edits from the settings drawer; unlike updateNodeData, undoable. */
+  updateNodeSettings: (nodeId: string, settings: Pick<BaseNodeData, "label" | "config">) => void;
   setNodes: (nodes: WorkflowNode[]) => void;
   setEdges: (edges: Edge[]) => void;
 }
@@ -125,6 +127,18 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       nodes: get().nodes.map((node) =>
         node.id === nodeId ? { ...node, data: { ...node.data, ...data } } : node,
       ),
+    });
+  },
+
+  updateNodeSettings: (nodeId, settings) => {
+    const before = get().nodes;
+    const after = before.map((node) =>
+      node.id === nodeId ? { ...node, data: { ...node.data, ...settings } } : node,
+    );
+    set({ nodes: after });
+    useUndoRedoStore.getState().push({
+      undo: () => set({ nodes: before }),
+      redo: () => set({ nodes: after }),
     });
   },
 

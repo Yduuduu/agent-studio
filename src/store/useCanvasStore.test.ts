@@ -110,3 +110,16 @@ describe("useCanvasStore", () => {
     expect(history().past).toHaveLength(0);
   });
 });
+
+describe("useCanvasStore.updateNodeSettings", () => {
+  it("replaces label and config and is undoable", () => {
+    canvas().setNodes([node("a")]);
+    canvas().updateNodeSettings("a", { label: "Renamed", config: { model: "m" } });
+
+    expect(canvas().nodes[0]?.data).toMatchObject({ label: "Renamed", config: { model: "m" } });
+
+    history().undo();
+    expect(canvas().nodes[0]?.data.label).toBe("a");
+    expect(canvas().nodes[0]?.data.config).toBeUndefined();
+  });
+});

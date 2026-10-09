@@ -11,5 +11,7 @@ export const baseNodeDataSchema = z.object({
   kind: workflowNodeKindSchema,
   status: nodeStatusSchema.default("idle"),
   progress: z.number().min(0).max(100).optional(),
+  // Validated per kind by NODE_CONFIG_FORMS (types/form.schema.ts) on save.
+  config: z.record(z.string(), z.unknown()).optional(),
 });
 export type BaseNodeData = z.infer<typeof baseNodeDataSchema>;

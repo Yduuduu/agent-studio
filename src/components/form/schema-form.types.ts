@@ -1,8 +1,6 @@
 import type { ReactNode } from "react";
 import type { Control, FieldValues } from "react-hook-form";
 
-export type FieldType = "text" | "number" | "boolean" | "select" | "array" | "conditional";
-
 /**
  * Props shared by every field in the registry. The form is schema-driven, so
  * `name` is a runtime dot-path (e.g. `retry.policy.maxAttempts`) rather than a
@@ -45,3 +43,34 @@ export interface ConditionalFieldProps {
   is: (value: unknown) => boolean;
   children: ReactNode;
 }
+
+interface DescriptorBase {
+  /** Key within the enclosing object; SchemaForm prefixes it into a dot-path. */
+  key: string;
+  /** Present when uiSchema.visibleWhen applies; `dependsOn` is a sibling key. */
+  condition?: { dependsOn: string; is: (value: unknown) => boolean };
+}
+
+type LeafProps<P extends FieldProps> = Omit<P, "control" | "name">;
+
+export type LeafFieldDescriptor =
+  | (DescriptorBase & { type: "text"; props: LeafProps<TextFieldProps> })
+  | (DescriptorBase & { type: "number"; props: LeafProps<FieldProps> })
+  | (DescriptorBase & { type: "boolean"; props: LeafProps<FieldProps> })
+  | (DescriptorBase & { type: "select"; props: LeafProps<SelectFieldProps> });
+
+export type LeafFieldType = LeafFieldDescriptor["type"];
+
+export type FieldDescriptor =
+  | LeafFieldDescriptor
+  | (DescriptorBase & {
+      type: "object";
+      label: string;
+      description?: string;
+      fields: FieldDescriptor[];
+    })
+  | (DescriptorBase & {
+      type: "array";
+      props: LeafProps<Omit<ArrayFieldProps, "renderItem">>;
+      itemFields: FieldDescriptor[];
+    });

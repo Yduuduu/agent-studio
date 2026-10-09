@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 
 import { WorkflowCanvas } from "@/components/canvas/WorkflowCanvas";
+import { NodeSettingsDrawer } from "@/components/node-settings/NodeSettingsDrawer";
 import { Toaster } from "@/components/ui/toast/Toaster";
 import { useCanvasStore, type WorkflowNode } from "@/store/useCanvasStore";
 
@@ -49,6 +50,7 @@ export default function Home() {
       <main className="flex-1">
         <WorkflowCanvas />
       </main>
+      <NodeSettingsDrawer />
       <Toaster />
     </div>
   );
